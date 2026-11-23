@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const TuyaAccessory = require('../lib/TuyaAccessory');
 const TuyaDevice = require('../lib/TuyaDevice');
 const SimpleLightAccessory = require('../lib/SimpleLightAccessory');
+const RGBTWLightAccessory = require('../lib/RGBTWLightAccessory');
 const {makeInstance} = require('./support/mocks');
 
 const KEY = '0123456789abcdef';
@@ -142,5 +143,65 @@ describe('HomeKit group writes', () => {
         instance.setMultiState({'1': true}, done);
         expect(device.update).toHaveBeenCalledWith({'1': true});
         expect(done).toHaveBeenCalledWith(null);
+    });
+});
+
+describe('existing RGB light controls through the group transport', () => {
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    const makeLight = (state, group, extra = {}) => {
+        const context = {
+            type: 'RGBTWLight', colorFunction: 'HSB', minBrightness: 10,
+            scaleBrightness: 1000, scaleWhiteColor: 1000,
+            ...(group ? {lanGroup: GROUP} : {}), ...extra
+        };
+        const result = makeInstance(RGBTWLightAccessory, state, context);
+        const transport = makeDevice({lanGroup: group ? GROUP : undefined});
+        transport.state = {...state};
+        const write = attachSocket(transport);
+        result.device.update.mockImplementation(dps => transport.update(dps));
+        result.instance._registerCharacteristics(result.device.state);
+        const handlers = result.accessory._mockService._mockChar.onSet.mock.calls.map(call => call[0]);
+        return {...result, write, handlers};
+    };
+
+    const decode = packet => {
+        const decipher = crypto.createDecipheriv('aes-128-ecb', KEY, null);
+        const plain = Buffer.concat([decipher.update(packet.subarray(31, -8)), decipher.final()]);
+        return {command: packet.readUInt32BE(8), payload: JSON.parse(plain)};
+    };
+
+    const cases = [
+        ['power', 'white', [[0, false]], ['1'], {}],
+        ['white brightness', 'white', [[1, 75]], ['3'], {}],
+        ['colour brightness', 'colour', [[1, 50]], ['5'], {}],
+        ['white temperature', 'colour', [[2, 200]], ['2', '3', '4'], {}],
+        ['hue and saturation', 'white', [[3, 120], [4, 80]], ['2', '5'], {}],
+        ['custom brightness DP', 'white', [[1, 75]], ['33'], {dpBrightness: 33}]
+    ];
+
+    test.each(cases)('%s keeps the existing RGB handler DP values', async (name, mode, actions, expectedDps, context) => {
+        const state = {'1': true, '2': mode, '3': 138, '4': 1000, '5': '000003d403e8', '33': 138};
+        const individual = makeLight(state, false, context);
+        const grouped = makeLight(state, true, context);
+        for (const light of [individual, grouped]) {
+            const pending = actions.map(([index, value]) => light.handlers[index](value));
+            await jest.advanceTimersByTimeAsync(500);
+            await Promise.all(pending);
+        }
+        const normalFrames = individual.write.mock.calls.map(([packet]) => decode(packet));
+        const groupFrames = grouped.write.mock.calls.map(([packet]) => decode(packet));
+        expect(normalFrames.length).toBeGreaterThan(0);
+        expect(groupFrames.map(frame => frame.payload.dps)).toEqual(normalFrames.map(frame => frame.payload.dps));
+        expect(Object.keys(Object.assign({}, ...groupFrames.map(frame => frame.payload.dps))).sort()).toEqual(expectedDps.sort());
+        for (const frame of normalFrames) {
+            expect(frame.command).toBe(7);
+            expect(frame.payload).toHaveProperty('devId');
+        }
+        for (const frame of groupFrames) {
+            expect(frame.command).toBe(13);
+            expect(frame.payload).toEqual({cid: '0058', ctype: 2, dps: expect.any(Object), mbid: 'c020'});
+        }
     });
 });

@@ -7,6 +7,37 @@ without internet or phone Bluetooth. The patched Homebridge runtime still needs
 the same physical verification. This fork branch identifies itself as
 `4.4.0-alusso.1`; it is not an upstream npm release.
 
+## Reuse of the existing light controls
+
+Group support is a transport option on the existing light accessory. It does
+not define separate power, dimming, colour or white-temperature commands.
+`RGBTWLightAccessory` keeps its existing DP mapping, value conversions and
+HomeKit handlers. The shared transport takes those same DP values and adds the
+group address envelope when `lanGroup` is configured.
+
+For example, the normal white-brightness handler can produce `{"3": 750}`.
+The group transport sends that unchanged DP object as:
+
+```json
+{
+  "cid": "0058",
+  "ctype": 2,
+  "dps": {"3": 750},
+  "mbid": "c020"
+}
+```
+
+The capture requires Tuya command 13 for this envelope, in place of command 7
+used for ordinary Tuya 3.3 device writes. Encryption and packet framing remain
+the existing transport implementation. Tests exercise the registered RGB light
+handlers for power, white/colour brightness, temperature, hue/saturation and a
+custom brightness DP, and verify their DP values are unchanged by group routing.
+
+Brightness and colour already use these existing handlers. Their outstanding
+verification is a physical test of all four fittings, not additional command
+implementation. Startup state handling, report filtering, repeated group writes
+and disabling member-only cloud fallback support that shared transport.
+
 ## Install the fork build
 
 Back up Homebridge through its UI and record the currently installed Tuya Plus
@@ -67,6 +98,11 @@ Put that object inside the existing TuyaLan platform's `devices` array. Do not
 replace the entire Homebridge config with it. Back up Homebridge through its UI
 before installing or editing configuration. Restart only the Tuya Plus child
 bridge after applying the patch and configuration.
+
+The `SimpleLight` example exposes switching only. For an existing `RGBTWLight`
+entry, retain that type and its DP mappings and add only the group settings.
+Its existing brightness, colour and white-temperature controls then use the
+same group transport; no separate group light class is required.
 
 ## Scope and status
 
