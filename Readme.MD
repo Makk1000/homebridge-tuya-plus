@@ -26,6 +26,19 @@ A community-maintained Homebridge plugin for controlling Tuya devices locally ov
 * [License](#license)
 * [Donating](#donating)
 
+## ALUSSO Galaxy Link groups in this fork
+
+The `alusso-local-groups` branch adds optional LAN group addressing for verified
+Tuya 3.3 Galaxy Link lights. One HomeKit accessory controls the existing group
+through its Wi-Fi member. Add `lanGroup` to that member's configuration; other
+devices keep their existing behavior. Group cloud fallback is disabled because
+a cloud command addressed to the Wi-Fi member would control only that fitting.
+
+See [Galaxy Link LAN groups](wiki/Galaxy-Link-LAN-Groups.md) for installation,
+configuration, limitations and rollback. The standalone group on/off script has
+been verified on four ALUSSO fittings. The Homebridge integration still needs
+the same hardware test; colour and brightness are not yet physically verified.
+
 ## Supported Device Types
 > Click the number next to your device to find the possible DataPoint "DP" values, then add as needed to your config.
 
