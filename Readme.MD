@@ -35,9 +35,15 @@ devices keep their existing behavior. Group cloud fallback is disabled because
 a cloud command addressed to the Wi-Fi member would control only that fitting.
 
 See [Galaxy Link LAN groups](wiki/Galaxy-Link-LAN-Groups.md) for installation,
-configuration, limitations and rollback. The standalone group on/off script has
-been verified on four ALUSSO fittings. The Homebridge integration still needs
-the same hardware test; colour and brightness are not yet physically verified.
+configuration, limitations and rollback. Group control has been verified on
+four ALUSSO fittings using the existing light's `lanGroup` configuration.
+
+This GitHub build identifies itself as **Homebridge Tuya Plus (@Makk1000)**,
+version `4.4.0+alusso.2`. Its package is marked `private` so Homebridge UI does
+not use the upstream npm package's maintainer details or offer registry updates
+that would replace the fork. This flag does not change the GitHub repository's
+visibility. Install future fork updates from this branch; the existing package
+name, platform and accessory identities are preserved.
 
 ## Supported Device Types
 > Click the number next to your device to find the possible DataPoint "DP" values, then add as needed to your config.

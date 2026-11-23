@@ -3,9 +3,10 @@
 This optional transport setting sends commands to an existing Galaxy Link group
 through its Wi-Fi member. It was developed from a Tuya Smart packet capture and
 a standalone script that the owner verified switched all four lights off/on
-without internet or phone Bluetooth. The patched Homebridge runtime still needs
-the same physical verification. This fork branch identifies itself as
-`4.4.0-alusso.1`; it is not an upstream npm release.
+without internet or phone Bluetooth. Group control through this Homebridge
+fork has also been verified on all four fittings using the existing light's
+`lanGroup` configuration. This branch identifies itself as `4.4.0+alusso.2`;
+it is not an upstream npm release.
 
 ## Reuse of the existing light controls
 
@@ -53,8 +54,15 @@ installation, use that existing prefix instead of `-g`. If Homebridge runs in
 Docker, run npm inside its container, not on the Mac host. Confirm the installation
 location before changing it. The package name, platform name and UUID generation
 remain unchanged. Add the device configuration below, then restart only the
-Tuya Plus child bridge. A future registry plugin update can replace this fork
-build, so retain the branch URL and check group support before updating.
+Tuya Plus child bridge.
+
+The installed title is **Homebridge Tuya Plus (@Makk1000)**. The package sets
+`private: true`, which Homebridge UI supports for skipping npm registry lookups
+and update offers. This prevents upstream npm releases from being offered as
+updates to the fork; future fork updates must be installed from this branch.
+Homebridge UI no longer fills the maintainer label from the upstream npm
+listing; the title identifies the fork owner. Original authors remain credited in the package
+and README. GitHub repository visibility is unaffected.
 
 ## Configuration
 
